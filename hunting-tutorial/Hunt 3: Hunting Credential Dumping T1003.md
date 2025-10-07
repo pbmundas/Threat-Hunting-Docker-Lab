@@ -49,15 +49,15 @@ Open **Kibana → Discover → mordor-* index**:
 **Sysmon process access to LSASS**:
 
 ```text
-target_process_name: "lsass.exe"
-AND process_name: "mimikatz.exe"
+NewProcessName: "lsass.exe"
+AND ParentProcessName: "mimikatz.exe"
 ```
 
 **Suspicious PowerShell credential dumping**:
 
 ```text
-process_name: "powershell.exe"
-AND command_line: "*Invoke-Mimikatz* OR *sekurlsa*"
+NewProcessName: "powershell.exe"
+AND CommandLine: "*Invoke-Mimikatz* OR *sekurlsa*"
 ```
 
 Look for:
@@ -96,9 +96,9 @@ Open **MITRE Mordor Dashboard**:
 ```yaml
 filter:
 - term:
-    target_process_name: "lsass.exe"
+    NewProcessName: "lsass.exe"
 - term:
-    process_name: "mimikatz.exe"
+    ParentProcessName: "mimikatz.exe"
 ```
 
 * Adjust thresholds for your lab data (e.g., alert on **1+ events** per host in 1 hour).
