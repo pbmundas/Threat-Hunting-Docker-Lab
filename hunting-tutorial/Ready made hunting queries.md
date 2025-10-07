@@ -1,4 +1,4 @@
-# 100 Mordor Threat Hunting Queries (KQL) — Fields mapped to your ELK schema
+# 100 Threat Hunting Queries (KQL) — Fields mapped to your ELK schema
 
 **Fields used:** `@timestamp`, `Hostname`, `NewProcessName`, `ParentProcessName`, `ProcessId`, `CommandLine`, `EventID`, `EventType`, `Message`, `SubjectUserName`, `TargetUserName`, `log.file.path`, `port`, `host.name`, `event.original`, `SourceName`, `SourceModuleName`
 
@@ -109,8 +109,4 @@
 
 ---
 
-### Notes & Next Steps
 
-* Some network fields like `dest_ip` are not present in your field list; where needed I used `Message` or `EventType` to detect network-related content — you can refine these once you confirm the exact network fields (e.g., `source.ip`, `destination.ip`) if available.
-* If you prefer, I can convert this table into a CSV or Excel file and provide a download link so you can import it into your tracking system. I can also generate saved searches for Kibana (JSON) for bulk import.
-* If you'd like, I will now **produce a CSV file** of this table and a set of **Kibana saved searches** ready to import. Let me know which one you want next.
