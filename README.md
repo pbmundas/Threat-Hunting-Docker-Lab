@@ -32,7 +32,6 @@ This repository contains a **Threat Hunting lab** built with Docker, using the *
 ```
 Threat-Hunting-Docker-Lab/
 ├── docker-compose.yml
-├── Dockerfile
 ├── logstash/
 │   └── pipeline/
 │       └── mordor.conf
@@ -57,7 +56,7 @@ Threat-Hunting-Docker-Lab/
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/pbmundas/Threat-Hunting.git
+git clone https://github.com/pbmundas/Threat-Hunting-Docker-Lab.git
 cd Threat-Hunting/Lab
 ```
 
@@ -88,12 +87,7 @@ Expected containers:
 
 ## Importing Mordor Dataset
 
-1. JSON logs (Sysmon, Windows event logs) can be ingested by **Logstash** directly.
-2. PCAP/Network captures:
-   * Process with **Zeek**: `zeek -C -r sample.pcap LogAscii::use_json=T`
-   * Or **Suricata**: `suricata -r sample.pcap -l suricata-logs/`
-   * Place resulting JSON logs in `Lab/network-logs/`.
-3. Ensure `docker-compose.yml` volumes map the logs to Logstash input paths.
+1. JSON logs (Sysmon, Windows event logs) can be ingested by **Logstash** directly keeping those JSON files in mordor folder.
 
 ---
 
