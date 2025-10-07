@@ -30,21 +30,25 @@ This repository contains a **Threat Hunting lab** built with Docker, using the *
 ## Folder Structure
 
 ```
-Threat-Hunting/
-├── Lab/
-│   ├── docker-compose.yml
-│   ├── elastalert/
-│   │   ├── config.yaml
-│   │   └── rules/
-│   │       ├── powershell_suspicious.yml
-│   │       ├── credential_dumping.yml
-│   │       └── c2_activity.yml
-│   ├── dashboards/
-│   │   └── mitre_mordor_dashboard.ndjson
-│   └── setup/
-│       └── import_dashboards.sh
-├── README.md
-└── .gitignore
+Threat-Hunting-Docker-Lab/
+├── docker-compose.yml
+├── Dockerfile
+├── logstash/
+│   └── pipeline/
+│       └── mordor.conf
+├── elastalert/
+│   └── opt/
+│       └── rules/
+|           └── mordor_suspicious.yml
+│       └── config.yml
+├── kibana/
+│   └── dashboards/
+│       └── mordor_dashboard.ndjson
+├── setup/
+│   └── import_dashboards.sh
+└── mordor/
+    └── (place Mordor dataset JSON files here)
+
 ```
 
 ---
