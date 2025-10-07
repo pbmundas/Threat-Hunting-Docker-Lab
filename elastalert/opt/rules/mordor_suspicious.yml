@@ -1,0 +1,10 @@
+name: Mordor - Suspicious Command Exec
+type: any
+index: "mordor-*"
+filter:
+  - term:
+      "attack_technique.keyword": "T1059"
+alert:
+  - "email"   # configure SMTP in ElastAlert config if you want email
+# realtime: true
+# (Or use slack webhook, webhook alerts etc.)

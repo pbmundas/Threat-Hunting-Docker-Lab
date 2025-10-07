@@ -1,0 +1,65 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+      - action.auto_create_index=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.10.2
+    environment:
+      ELASTICSEARCH_HOSTS: "http://elasticsearch:9200"
+      xpack.security.enabled: "false"
+    depends_on:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.10.2
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./mordor:/mordor:ro   # place Mordor dataset JSONs here
+    environment:
+      LS_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "5044:5044"
+    depends_on:
+      - elasticsearch
+
+  elastalert:
+    image: jertel/elastalert2:latest
+    container_name: elastalert
+    volumes:
+      - ./elastalert/config.yaml:/opt/config.yaml:ro
+      - ./elastalert/rules:/opt/rules:ro
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+    depends_on:
+      - elasticsearch
+    command: ["--config", "/opt/config.yaml"]
+
+  elk-setup:
+    image: alpine:3.18
+    volumes:
+      - ./setup:/setup:ro
+      - ./kibana/dashboards:/kibana:ro
+    depends_on:
+      - elasticsearch
+      - kibana
+      - logstash
+    command: sh /setup/import_dashboards.sh
+
+volumes:
+  esdata:

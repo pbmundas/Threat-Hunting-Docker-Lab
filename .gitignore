@@ -1,0 +1,6 @@
+# Ignore Docker volumes and temporary files
+*.log
+*.tmp
+esdata/
+node_modules/
+.env

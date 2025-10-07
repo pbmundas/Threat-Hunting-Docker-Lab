@@ -1,0 +1,2 @@
+{"type":"index-pattern","id":"mordor-*","attributes":{"title":"mordor-*","timeFieldName":"@timestamp"},"migrationVersion":{"index-pattern":"7.8.0"}}
+{"type":"dashboard","id":"mordor-overview","attributes":{"title":"Mordor Overview","panelsJSON":"[]","optionsJSON":"{}","version":1},"references":[]}
