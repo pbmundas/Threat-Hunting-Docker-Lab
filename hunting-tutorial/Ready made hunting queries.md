@@ -1,870 +1,116 @@
+# 100 Mordor Threat Hunting Queries (KQL) — Fields mapped to your ELK schema
 
-* **Hypothesis**: Why this query is relevant (based on Mordor TTPs/MITRE ATT&CK).
-* **Query (KQL/ES)**: Ready to paste in Kibana Discover or use in saved searches.
+**Fields used:** `@timestamp`, `Hostname`, `NewProcessName`, `ParentProcessName`, `ProcessId`, `CommandLine`, `EventID`, `EventType`, `Message`, `SubjectUserName`, `TargetUserName`, `log.file.path`, `port`, `host.name`, `event.original`, `SourceName`, `SourceModuleName`
 
-I have structured them by **threat category** for clarity. 
+> Paste each KQL query into **Kibana Discover** (select appropriate time range). These queries use your field names exactly as provided.
 
----
-
-### **Execution / Command & Scripting Interpreter (T1059)**
-
-1. **Hypothesis:** Suspicious PowerShell execution with encoded command may indicate malware execution.
-   **Query:**
-
-   ```kql
-   process_name: "powershell.exe" AND process_command_line: ("-EncodedCommand" OR "-enc" OR "IEX" OR "Invoke-Expression")
-   ```
-
-2. **Hypothesis:** PowerShell executed from temporary folders often indicates fileless malware.
-   **Query:**
-
-   ```kql
-   process_name: "powershell.exe" AND process_path: ("C:\\Users\\*\\AppData\\Local\\Temp\\*" OR "C:\\Windows\\Temp\\*")
-   ```
-
-3. **Hypothesis:** WMI execution used by attackers for lateral movement.
-   **Query:**
-
-   ```kql
-   process_name: "wmic.exe" AND process_command_line: "*process call create*"
-   ```
-
-4. **Hypothesis:** Cmd.exe executing encoded scripts or network tools indicates malicious automation.
-   **Query:**
-
-   ```kql
-   process_name: "cmd.exe" AND process_command_line: ("*base64*" OR "*powershell*")
-   ```
-
-5. **Hypothesis:** MSHTA executing remote scripts may indicate fileless malware.
-   **Query:**
-
-   ```kql
-   process_name: "mshta.exe" AND process_command_line: ("http*" OR "https*")
-   ```
-
-6. **Hypothesis:** CScript/WScript executing suspicious scripts may indicate automation malware.
-   **Query:**
-
-   ```kql
-   process_name: ("cscript.exe" OR "wscript.exe") AND process_command_line: ("*.vbs" OR "*.js")
-   ```
-
-7. **Hypothesis:** Unusual execution of admin tools from user directories may indicate misuse.
-   **Query:**
-
-   ```kql
-   process_path: "C:\\Users\\*" AND process_name: ("taskkill.exe" OR "net.exe" OR "sc.exe")
-   ```
-
-8. **Hypothesis:** PowerShell downloading files from the internet could indicate C2 or dropper activity.
-   **Query:**
-
-   ```kql
-   process_name: "powershell.exe" AND process_command_line: ("Invoke-WebRequest" OR "DownloadFile" OR "New-Object System.Net.WebClient")
-   ```
-
-9. **Hypothesis:** Rundll32 executing remote scripts is suspicious and often used in fileless attacks.
-   **Query:**
-
-   ```kql
-   process_name: "rundll32.exe" AND process_command_line: ("http*" OR "https*" OR "*.dll")
-   ```
-
-10. **Hypothesis:** Executables running from unusual directories (Temp, Downloads) may indicate malware.
-    **Query:**
-
-    ```kql
-    process_path: ("C:\\Users\\*\\Downloads\\*" OR "C:\\Users\\*\\AppData\\Local\\Temp\\*") AND process_name: "*.*"
-    ```
-
----
-
-### **Persistence (T1543, T1053, Run Keys)**
-
-11. **Hypothesis:** Creation of new Windows service may indicate persistence.
-    **Query:**
-
-    ```kql
-    event_id: 7045
-    ```
-
-12. **Hypothesis:** Scheduled tasks created by unusual users may indicate persistence.
-    **Query:**
-
-    ```kql
-    event_id: 4698 AND user_name: NOT ("SYSTEM" OR "Administrator")
-    ```
-
-13. **Hypothesis:** Registry Run keys modified may indicate persistence.
-    **Query:**
-
-    ```kql
-    registry_key_path: ("HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" OR "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run")
-    ```
-
-14. **Hypothesis:** New startup files in user directories indicate potential persistence.
-    **Query:**
-
-    ```kql
-    file_path: ("C:\\Users\\*\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\*" OR "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\*")
-    ```
-
-15. **Hypothesis:** Auto-start entries created in unusual registry locations.
-    **Query:**
-
-    ```kql
-    registry_key_path: ("HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce" OR "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce")
-    ```
-
-16. **Hypothesis:** Task Scheduler jobs running scripts from temp directories are suspicious.
-    **Query:**
-
-    ```kql
-    event_id: 4698 AND task_path: ("*\\Temp\\*" OR "*\\AppData\\Local\\Temp\\*")
-    ```
-
-17. **Hypothesis:** Services installed with unusual binary path indicate malicious persistence.
-    **Query:**
-
-    ```kql
-    event_id: 7045 AND binary_path: ("C:\\Users\\*" OR "C:\\Temp\\*")
-    ```
-
-18. **Hypothesis:** Registry modifications for WMI Event Subscriptions may indicate stealth persistence.
-    **Query:**
-
-    ```kql
-    registry_key_path: "HKLM\\Software\\Microsoft\\WBEM\\CIMOM\\*EventFilter*"
-    ```
-
-19. **Hypothesis:** Scheduled tasks triggered by unusual users or at odd times.
-    **Query:**
-
-    ```kql
-    event_id: 4698 AND (task_trigger_type: "*" OR user_name: NOT ("SYSTEM" OR "Administrator"))
-    ```
-
-20. **Hypothesis:** Malicious scripts placed in startup folder executed by users.
-    **Query:**
-
-    ```kql
-    file_path: "*\\Startup\\*" AND process_name: ("*.vbs" OR "*.bat" OR "*.ps1")
-    ```
-
-Great — continuing with the next **20 hunting queries (21–40)**. Each entry includes a short **hypothesis** and a **KQL** query you can paste directly into **Kibana Discover** (adjust field names if your ingested schema uses slightly different names; I used common Sysmon/Winlogbeat/Elasticsearch field names like `process_name`, `process_command_line`, `event_id`, `dest_ip`, `user_name`, `file_path`, `registry_key_path`, `target_process_name`, `bytes_sent`, etc.).
+|   # | Hypothesis                                                                                  | KQL Query                                                                                                                                              |                                                    |
+| --: | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------- |
+|   1 | PowerShell executed with encoded command — likely malicious.                                | `NewProcessName: "powershell.exe" AND CommandLine:("-EncodedCommand" OR "-enc" OR "IEX" OR "Invoke-Expression")`                                       |                                                    |
+|   2 | PowerShell run from Temp folder — possible fileless activity.                               | `NewProcessName: "powershell.exe" AND CommandLine:("C:\\Users\\*\\AppData\\Local\\Temp\\*" OR "C:\\Windows\\Temp\\*") OR log.file.path:("*\\Temp\\*")` |                                                    |
+|   3 | WMIC used to create processes remotely — potential lateral movement.                        | `NewProcessName: "wmic.exe" AND CommandLine:("process call create" OR "process call")`                                                                 |                                                    |
+|   4 | cmd.exe used with base64 or PowerShell in commandline — suspicious automation.              | `NewProcessName: "cmd.exe" AND CommandLine:("base64" OR "powershell")`                                                                                 |                                                    |
+|   5 | mshta executing a remote URL — fileless remote execution.                                   | `NewProcessName: "mshta.exe" AND CommandLine:("http" OR "https")`                                                                                      |                                                    |
+|   6 | cscript/wscript running scripts — possible malicious scripts.                               | `NewProcessName:("cscript.exe" OR "wscript.exe") AND CommandLine:(".vbs" OR ".js")`                                                                    |                                                    |
+|   7 | Admin tools run from user directories — potential misuse.                                   | `NewProcessName:("taskkill.exe" OR "net.exe" OR "sc.exe") AND CommandLine:("C:\\Users\\*")`                                                            |                                                    |
+|   8 | PowerShell downloading files from web — likely staging/C2.                                  | `NewProcessName: "powershell.exe" AND CommandLine:("Invoke-WebRequest" OR "DownloadFile" OR "New-Object System.Net.WebClient")`                        |                                                    |
+|   9 | rundll32 launching remote DLLs or URLs — suspicious.                                        | `NewProcessName: "rundll32.exe" AND CommandLine:("http" OR "https" OR ".dll")`                                                                         |                                                    |
+|  10 | Executables running from Downloads or Temp folders — suspicious drops.                      | `CommandLine:("C:\\Users\\*\\Downloads\\*" OR "C:\\Users\\*\\AppData\\Local\\Temp\\*") OR log.file.path:("*\\Downloads\\*" OR "*\\Temp\\*")`           |                                                    |
+|  11 | New Windows service creation (EventID 7045) — persistence.                                  | `EventID: 7045`                                                                                                                                        |                                                    |
+|  12 | Scheduled task created by non-system account (EventID 4698).                                | `EventID: 4698 AND SubjectUserName: NOT ("SYSTEM" OR "Administrator")`                                                                                 |                                                    |
+|  13 | Registry Run keys modified (search in Message) — persistence.                               | `Message: ("Run\\" OR "CurrentVersion\\Run" OR "RunOnce")`                                                                                             |                                                    |
+|  14 | Files created in Startup folders — persistence artifacts.                                   | `log.file.path:("*\\Start Menu\\Programs\\Startup\\*" OR "*\\Startup\\*")`                                                                             |                                                    |
+|  15 | RunOnce entries created — possible single-run persistence.                                  | `Message: ("RunOnce" OR "CurrentVersion\\RunOnce")`                                                                                                    |                                                    |
+|  16 | Scheduled tasks executing from Temp — suspicious.                                           | `EventID: 4698 AND CommandLine:("Temp" OR "AppData\\Local\\Temp")`                                                                                     |                                                    |
+|  17 | Services installed with binary path in user folders — malicious install.                    | `EventID: 7045 AND Message:("C:\\Users\\" OR "C:\\Temp\\")`                                                                                            |                                                    |
+|  18 | WMI event filter/consumer registry modifications — stealth persistence.                     | `Message: ("EventFilter" OR "EventConsumer" OR "FilterToConsumerBinding" OR "WBEM")`                                                                   |                                                    |
+|  19 | Scheduled tasks by non-standard users or odd triggers.                                      | `EventID: 4698 AND SubjectUserName: NOT ("SYSTEM" OR "Administrator")`                                                                                 |                                                    |
+|  20 | Scripts placed in Startup and executed.                                                     | `log.file.path:("*\\Startup\\*") AND NewProcessName:("powershell.exe" OR "cmd.exe" OR "cscript.exe")`                                                  |                                                    |
+|  21 | Mimikatz or credential dumper executed.                                                     | `NewProcessName: "mimikatz.exe" OR CommandLine:("sekurlsa" OR "LogonPasswords" )`                                                                      |                                                    |
+|  22 | Process accessing LSASS (process access events in Message).                                 | `EventType: "ProcessAccess" OR Message: ("lsass.exe" AND ("OpenProcess" OR "ReadProcessMemory" OR "QueryInformation"))`                                |                                                    |
+|  23 | certutil or rundll32 used to stage payloads (decode/download).                              | `NewProcessName:("certutil.exe" OR "rundll32.exe") AND CommandLine:("-decode" OR "-urlcache" OR "http" OR "https")`                                    |                                                    |
+|  24 | PowerShell invoking credential-dumping modules.                                             | `NewProcessName: "powershell.exe" AND CommandLine:("Invoke-Mimikatz" OR "sekurlsa" OR "LogonPasswords")`                                               |                                                    |
+|  25 | Attempts to read SAM/SYSTEM hives via file access in Message.                               | `Message: ("\Windows\System32\config\SAM" OR "\Windows\System32\config\SYSTEM") OR log.file.path:("*\\config\\SAM" )`                                  |                                                    |
+|  26 | Network connections on unusual ports (non-standard).                                        | `EventType: "Network" AND port: NOT (80 OR 443 OR 53 OR 22 OR 21)`                                                                                     |                                                    |
+|  27 | Repeated outbound connections to same external host — beaconing (use Message to find dest). | `EventType: "Network" AND Message: NOT ("10." OR "192.168." OR "172.")`                                                                                |                                                    |
+|  28 | PowerShell initiating network connections (process with EventType Network).                 | `NewProcessName: "powershell.exe" AND EventType: "Network"`                                                                                            |                                                    |
+|  29 | DNS with random-looking subdomains (search Message).                                        | `EventType: "dns" AND Message: /[a-z0-9]{8,}\./`                                                                                                       |                                                    |
+|  30 | Large outbound bytes indicated in Message — possible exfil.                                 | `EventType: "Network" AND Message: /bytes_sent.*[5-9][0-9]{5,}/`                                                                                       |                                                    |
+|  31 | PsExec usage for remote execution.                                                          | `NewProcessName: "psexec.exe" OR CommandLine: "\\\\*"`                                                                                                 |                                                    |
+|  32 | RDP logons (EventID 4624 with LogonType 10) from external hosts (Message contains source).  | `EventID: 4624 AND Message: ("LogonType: 10") AND Message: NOT ("10." OR "192.168.")`                                                                  |                                                    |
+|  33 | PowerShell/WinRM remote execution to other hosts.                                           | `NewProcessName:("winrm.exe" OR "wmic.exe" OR "powershell.exe") AND CommandLine:("-ComputerName" OR "-Hostname" )`                                     |                                                    |
+|  34 | SMB connections to many hosts — lateral scan (Message contains dest).                       | `EventType: "Network" AND Message: (" dest_port: 445" OR "SMB")`                                                                                       |                                                    |
+|  35 | One account logging onto many hosts (possible credential reuse).                            | `EventID: 4624 AND SubjectUserName: *                                                                                                                  | stats count() by SubjectUserName`                  |
+|  36 | Service created by non-admin user (user in SubjectUserName).                                | `EventID: 7045 AND SubjectUserName: NOT ("SYSTEM" OR "Administrator")`                                                                                 |                                                    |
+|  37 | Scheduled task invoking PowerShell from Temp.                                               | `EventID: 4698 AND CommandLine:("powershell.exe" AND "Temp")`                                                                                          |                                                    |
+|  38 | Creation of archives in Temp or Downloads (staging).                                        | `Message: (".zip" OR ".rar" OR ".7z") AND log.file.path:("*\\Temp\\*" OR "*\\Downloads\\*")`                                                           |                                                    |
+|  39 | Scheduled tasks with suspicious names or outside Microsoft paths.                           | `EventID: 4698 AND Message: NOT ("\\Microsoft\\") AND Message: ("Updater" OR "svchost")`                                                               |                                                    |
+|  40 | Service image path modified to non-System32 path.                                           | `EventID: 7045 AND Message: NOT ("C:\\Windows\\System32\\")`                                                                                           |                                                    |
+|  41 | certutil used to download or decode files.                                                  | `NewProcessName: "certutil.exe" AND CommandLine:("-urlcache" OR "-decode" OR "http" )`                                                                 |                                                    |
+|  42 | bitsadmin used for HTTP/S downloads.                                                        | `NewProcessName: "bitsadmin.exe" AND CommandLine:("http" OR "https")`                                                                                  |                                                    |
+|  43 | mshta executing remote scripts (fileless).                                                  | `NewProcessName: "mshta.exe" AND CommandLine:("http" OR "https")`                                                                                      |                                                    |
+|  44 | regsvr32 invoking script components/sct files.                                              | `NewProcessName: "regsvr32.exe" AND CommandLine:(".sct" OR ".dll")`                                                                                    |                                                    |
+|  45 | rundll32 loading DLLs from non-System32 paths.                                              | `NewProcessName: "rundll32.exe" AND log.file.path: NOT ("C:\\Windows\\System32\\*")`                                                                   |                                                    |
+|  46 | WMI subscription creation — search Message for filters/consumers.                           | `Message: ("EventFilter" OR "EventConsumer" OR "FilterToConsumerBinding" )`                                                                            |                                                    |
+|  47 | Commands to stop or delete security services/tools.                                         | `CommandLine: ("sc stop" OR "sc delete" OR "taskkill /f /im")`                                                                                         |                                                    |
+|  48 | PowerShell scripts located in AppData/Temp.                                                 | `NewProcessName: "powershell.exe" AND CommandLine:("AppData\\Roaming" OR "AppData\\Local\\Temp")`                                                      |                                                    |
+|  49 | Encoded or obfuscated commands in any process CommandLine.                                  | `CommandLine: ("-enc" OR "-EncodedCommand" OR "IEX" )`                                                                                                 |                                                    |
+|  50 | Trusted utilities invoked with URL or encoded arguments.                                    | `NewProcessName:("regsvr32.exe" OR "rundll32.exe" OR "mshta.exe" OR "certutil.exe") AND CommandLine:("http" OR "-EncodedCommand" )`                    |                                                    |
+|  51 | ProcessAccess to LSASS in Message — token theft.                                            | `Message: ("lsass.exe" AND ("ReadProcessMemory" OR "OpenProcess"))`                                                                                    |                                                    |
+|  52 | rundll32 loading temporary DLLs indicating droppers.                                        | `NewProcessName: "rundll32.exe" AND CommandLine:("Temp" OR "AppData")`                                                                                 |                                                    |
+|  53 | PowerShell starting hidden processes (Start-Process -WindowStyle Hidden).                   | `NewProcessName: "powershell.exe" AND CommandLine: ("Start-Process" AND "Hidden")`                                                                     |                                                    |
+|  54 | cscript/wscript executing from user temp paths.                                             | `NewProcessName:("cscript.exe" OR "wscript.exe") AND CommandLine:("AppData\\Local\\Temp" )`                                                            |                                                    |
+|  55 | mshta executing encoded content.                                                            | `NewProcessName: "mshta.exe" AND CommandLine:("-enc" OR "encoded")`                                                                                    |                                                    |
+|  56 | Run key created with non-System32 path (persistence).                                       | `Message: ("CurrentVersion\\Run" AND NOT Message: "C:\\Windows\\System32")`                                                                            |                                                    |
+|  57 | RunOnce entries for unexpected binaries.                                                    | `Message: ("RunOnce" AND NOT Message: "C:\\Windows\\System32")`                                                                                        |                                                    |
+|  58 | Scheduled tasks referencing Temp directories.                                               | `EventID: 4698 AND Message: ("Temp" OR "AppData\\Local\\Temp")`                                                                                        |                                                    |
+|  59 | WMI filter/consumer registries changed.                                                     | `Message: ("WBEM" OR "CIMOM" OR "EventFilter")`                                                                                                        |                                                    |
+|  60 | Service image path pointing to user-writable directory.                                     | `EventID: 7045 AND Message: ("C:\\Users\\" OR "AppData")`                                                                                              |                                                    |
+|  61 | Outbound connections to non-private IPs (search Message).                                   | `EventType: "Network" AND Message: NOT ("10." OR "192.168." OR "172.")`                                                                                |                                                    |
+|  62 | Host repeatedly contacting same external IP (beaconing).                                    | `EventType: "Network" AND Message: /dest_ip:\\d+\.\d+\.\d+\.\d+/`                                                                                      |                                                    |
+|  63 | High volume DNS requests to uncommon domains (Message contains query).                      | `EventType: "dns" AND Message: NOT ("local" OR "internal" OR "lan")`                                                                                   |                                                    |
+|  64 | PowerShell making network connections.                                                      | `NewProcessName: "powershell.exe" AND EventType: "Network"`                                                                                            |                                                    |
+|  65 | Large bytes sent flags in Message indicating exfiltration.                                  | `EventType: "Network" AND Message: /bytes_sent: [5-9][0-9]{5,}/`                                                                                       |                                                    |
+|  66 | FTP/SMB traffic detected from endpoints (Message).                                          | `EventType: "Network" AND Message: ("FTP" OR "SMB" OR "port 21" OR "port 445")`                                                                        |                                                    |
+|  67 | Unusual ICMP traffic patterns.                                                              | `EventType: "Network" AND Message: ("ICMP" OR "ping")`                                                                                                 |                                                    |
+|  68 | HTTPS over uncommon ports from PowerShell.                                                  | `NewProcessName: "powershell.exe" AND EventType: "Network" AND Message: NOT ("port 443")`                                                              |                                                    |
+|  69 | Host contacting many external IPs (possible scanning).                                      | `EventType: "Network"                                                                                                                                  | stats distinct_count(Message) by Hostname`         |
+|  70 | DNS queries with long/random subdomains (entropy).                                          | `EventType: "dns" AND Message: /[a-z0-9]{8,}\./`                                                                                                       |                                                    |
+|  71 | PsExec-style remote execution.                                                              | `NewProcessName: "psexec.exe" OR CommandLine: "\\\\*"`                                                                                                 |                                                    |
+|  72 | RDP logon events from unusual sources.                                                      | `EventID: 4624 AND Message: ("LogonType: 10" AND NOT Message:("10." OR "192.168."))`                                                                   |                                                    |
+|  73 | WinRM or WMI remote commands used for lateral movement.                                     | `NewProcessName: ("winrm.exe" OR "wmic.exe") AND CommandLine: ("-ComputerName" OR "/node:")`                                                           |                                                    |
+|  74 | SMB enumeration and lateral scans (Message contains SMB).                                   | `EventType: "Network" AND Message: /SMB/`                                                                                                              |                                                    |
+|  75 | Many remote logons by one account across hosts.                                             | `EventID: 4624                                                                                                                                         | stats distinct_count(Hostname) by SubjectUserName` |
+|  76 | Port scanning behavior by single host (Message).                                            | `EventType: "Network"                                                                                                                                  | stats distinct_count(Message) by Hostname`         |
+|  77 | Recon commands like netstat/arp executed.                                                   | `NewProcessName: ("netstat.exe" OR "arp.exe")`                                                                                                         |                                                    |
+|  78 | Attempts to list remote shares (net view).                                                  | `NewProcessName: "net.exe" AND CommandLine: "view \\\\*"`                                                                                              |                                                    |
+|  79 | ICMP sweeps to many targets (Message).                                                      | `EventType: "Network" AND Message: /ICMP/                                                                                                              | stats distinct_count(Message) by Hostname`         |
+|  80 | Remote access outside business hours (EventTime hours).                                     | `EventID: 4624 AND (EventTime: "*" ) AND NOT (EventTime: "09:*" OR EventTime: "10:*" OR EventTime: "11:*" )`                                           |                                                    |
+|  81 | Sudo-like or privilege escalation indicator on Linux (search CommandLine).                  | `CommandLine: ("sudo" OR "setuid" OR "pkexec")`                                                                                                        |                                                    |
+|  82 | runas/cmstp execution for privilege escalation.                                             | `NewProcessName: ("runas.exe" OR "cmstp.exe")`                                                                                                         |                                                    |
+|  83 | Setuid/setgid modifications detected in Message or file paths.                              | `Message: /suid                                                                                                                                        | sgid/ OR log.file.path: "/usr/*"`                  |
+|  84 | UAC bypass binaries executed (event viewer, fodhelper).                                     | `NewProcessName: ("eventvwr.exe" OR "fodhelper.exe")`                                                                                                  |                                                    |
+|  85 | Processes launched as SYSTEM from user sessions.                                            | `SubjectUserName: "SYSTEM" AND ParentProcessName: NOT "SYSTEM"`                                                                                        |                                                    |
+|  86 | Executables dropped into Temp by non-admins.                                                | `log.file.path:("*\\Temp\\*" OR "*\\Downloads\\*") AND NewProcessName: *.exe`                                                                          |                                                    |
+|  87 | Installer/archiver files created outside program dirs.                                      | `log.file.path:("*.exe" OR "*.msi" OR "*.zip" OR "*.rar") AND NOT log.file.path: ("C:\\Program Files\\*" OR "C:\\Windows\\*")`                         |                                                    |
+|  88 | Scripts written to startup directory.                                                       | `log.file.path:("*\\Startup\\*") AND log.file.path:("*.ps1" OR "*.bat" OR "*.vbs")`                                                                    |                                                    |
+|  89 | Shadow copies or backup files created in odd locations.                                     | `log.file.path:("*.vhd" OR "*.bak") AND NOT log.file.path:("C:\\Windows\\*" )`                                                                         |                                                    |
+|  90 | svchost.exe running outside System32 location.                                              | `NewProcessName: "svchost.exe" AND CommandLine: NOT ("C:\\Windows\\System32\\*")`                                                                      |                                                    |
+|  91 | Suspicious registry creations/modifications by reg.exe or PowerShell.                       | `NewProcessName: ("reg.exe" OR "powershell.exe") AND Message: ("Registry" OR "Set-ItemProperty" OR "New-ItemProperty")`                                |                                                    |
+|  92 | Auto-run scripts added to roaming/appdata.                                                  | `log.file.path:("*\\AppData\\Roaming\\*" OR "*\\AppData\\Local\\*") AND log.file.path:("*.ps1" OR "*.vbs" )`                                           |                                                    |
+|  93 | WMI filters/consumers presence in Message.                                                  | `Message: ("WMI" OR "WBEM" OR "CIMOM" OR "EventFilter")`                                                                                               |                                                    |
+|  94 | Scheduled tasks modified to run non-System32 binaries.                                      | `EventID: 4698 AND CommandLine: NOT ("C:\\Windows\\System32\\*")`                                                                                      |                                                    |
+|  95 | Startup folder changes by unusual processes.                                                | `log.file.path:("*\\Startup\\*") AND NewProcessName: NOT ("explorer.exe" OR "powershell.exe" OR "cmd.exe")`                                            |                                                    |
+|  96 | PowerShell in Temp + external network connection — high-confidence compromise.              | `NewProcessName: "powershell.exe" AND CommandLine:("Temp" OR "AppData") AND EventType: "Network"`                                                      |                                                    |
+|  97 | Credential dumping binary + service creation correlated.                                    | `(NewProcessName: "mimikatz.exe" OR CommandLine: "sekurlsa") AND EventID: 7045`                                                                        |                                                    |
+|  98 | mshta executing remote URL and network events — fileless beacon.                            | `NewProcessName: "mshta.exe" AND CommandLine: ("http" OR "https") AND EventType: "Network"`                                                            |                                                    |
+|  99 | Scheduled task creation + outbound connections outside office hours.                        | `EventID: 4698 AND EventType: "Network" AND EventTime: NOT ("09:*" OR "10:*" OR "11:*")`                                                               |                                                    |
+| 100 | Encoded PowerShell that also writes to startup — persistence + execution.                   | `NewProcessName: "powershell.exe" AND CommandLine:("-enc" OR "-EncodedCommand") AND log.file.path:("*\\Startup\\*")`                                   |                                                    |
 
 ---
 
-### **Credential Access / Dumping (T1003)**
-
-21. **Hypothesis:** Mimikatz or known credential dumping binaries executed on hosts.
-    **Query:**
-
-    ```kql
-    process_name: "mimikatz.exe" OR process_command_line: "*sekurlsa*"
-    ```
-
-22. **Hypothesis:** Processes accessing LSASS memory (Sysmon ProcessAccess events).
-    **Query:**
-
-    ```kql
-    event_id: 10 AND target_process_name: "lsass.exe"
-    ```
-
-23. **Hypothesis:** Suspicious rundll32/certutil operations used to stage credential dumper.
-    **Query:**
-
-    ```kql
-    process_name: ("rundll32.exe" OR "certutil.exe") AND process_command_line: ("-decode" OR "http" OR "https")
-    ```
-
-24. **Hypothesis:** PowerShell invoking credential-dumping modules or commands.
-    **Query:**
-
-    ```kql
-    process_name: "powershell.exe" AND process_command_line: ("Invoke-Mimikatz" OR "sekurlsa" OR "LogonPasswords")
-    ```
-
-25. **Hypothesis:** Attempts to read SAM / SYSTEM registry hives (backup or file access).
-    **Query:**
-
-    ```kql
-    process_command_line: ("\\Windows\\System32\\config\\SAM" OR "\\Windows\\System32\\config\\SYSTEM") OR file_path: "*\\config\\SAM"
-    ```
-
----
-
-### **Command & Control / Network (T1071)**
-
-26. **Hypothesis:** External connections to rare destination ports (non-80/443/53) may indicate C2.
-    **Query:**
-
-    ```kql
-    event_type: "network_connection" AND dest_port: NOT (80 OR 443 OR 53 OR 22 OR 21)
-    ```
-
-27. **Hypothesis:** Hosts with repeated outbound connections to same external IP (beaconing).
-    **Query:**
-
-    ```kql
-    event_type: "network_connection" AND NOT dest_ip: ("10.*" OR "192.168.*" OR "172.16.*" OR "172.31.*") | stats count() by host.name, dest_ip | where count > 10
-    ```
-
-    *(Paste the filter part in Discover; use Lens/TSVB/TS query for aggregation.)*
-
-28. **Hypothesis:** PowerShell spawning network connections (likely download/exfil).
-    **Query:**
-
-    ```kql
-    process_name: "powershell.exe" AND event_type: "network_connection"
-    ```
-
-29. **Hypothesis:** DNS queries with long or random subdomains often used by DNS-based C2.
-    **Query:**
-
-    ```kql
-    event_type: "dns" AND query: /[a-z0-9]{8,}\./
-    ```
-
-30. **Hypothesis:** Large outbound data transfers to external IPs indicate exfiltration.
-    **Query:**
-
-    ```kql
-    event_type: "network_connection" AND bytes_sent: >= 5000000 AND NOT dest_ip: ("10.*" OR "192.168.*" OR "172.16.*")
-    ```
-
----
-
-### **Lateral Movement / Remote Execution (T1021)**
-
-31. **Hypothesis:** PsExec usage to run commands on remote hosts.
-    **Query:**
-
-    ```kql
-    process_name: "psexec.exe" OR process_command_line: "*\\\\*"
-    ```
-
-32. **Hypothesis:** RDP connections initiated from non-admin workstations.
-    **Query:**
-
-    ```kql
-    event_id: 4624 AND logon_type: 10 AND NOT source_ip: ("10.*" OR "192.168.*")
-    ```
-
-33. **Hypothesis:** WMI or WinRM remote executions from user endpoints.
-    **Query:**
-
-    ```kql
-    process_name: ("wmic.exe" OR "winrm.exe" OR "powershell.exe") AND process_command_line: "*-ComputerName*"
-    ```
-
-34. **Hypothesis:** SMB connections to multiple hosts from single host indicates lateral scanning/propagation.
-    **Query:**
-
-    ```kql
-    event_type: "network_connection" AND dest_port: 445 AND source_ip: * | stats distinct_count(dest_ip) by host.name | where distinct_count > 5
-    ```
-
-    *(Use aggregation visual or Dev Tools for counts.)*
-
-35. **Hypothesis:** New administrative logons on many hosts by same account (credential reuse).
-    **Query:**
-
-    ```kql
-    event_id: 4624 AND logon_type: (3 OR 10) AND user_name: * | stats distinct_count(host.name) by user_name | where distinct_count > 5
-    ```
-
----
-
-### **Persistence & File Activity (T1543 / T1053 / T1074)**
-
-36. **Hypothesis:** New service installed by non-standard binary path or non-admin user.
-    **Query:**
-
-    ```kql
-    event_id: 7045 AND binary_path: ("C:\\Users\\*" OR "C:\\Temp\\*") AND user_name: NOT ("SYSTEM" OR "Administrator")
-    ```
-
-37. **Hypothesis:** Scheduled task created to run PowerShell or scripts from temp.
-    **Query:**
-
-    ```kql
-    event_id: 4698 AND process_command_line: ("*powershell*" OR "*\\Temp\\*")
-    ```
-
-38. **Hypothesis:** File writes to archives or compressible folder indicating staging for exfil.
-    **Query:**
-
-    ```kql
-    event_id: 11 AND file_path: ("*\\Downloads\\*" OR "*\\Temp\\*") AND file_name: ("*.zip" OR "*.rar" OR "*.7z")
-    ```
-
-39. **Hypothesis:** Creation of new scheduled tasks with suspicious names or paths.
-    **Query:**
-
-    ```kql
-    event_id: 4698 AND task_name: ("*Updater*" OR "*Windows Update*" OR "*svchost*") AND task_path: NOT ("\\Microsoft\\")
-    ```
-
-40. **Hypothesis:** Service image path changed (possible binary replacement).
-    **Query:**
-
-    ```kql
-    event_id: 7045 AND change_type: "modify" AND binary_path: NOT ("C:\\Windows\\System32\\*")
-    ```
-
-
-### **Credential Access / Dumping (T1003)**
-
-21. **Hypothesis:** Mimikatz or known credential dumping binaries executed on hosts.
-    **Query:**
-
-    ```kql
-    process_name: "mimikatz.exe" OR process_command_line: "*sekurlsa*"
-    ```
-
-22. **Hypothesis:** Processes accessing LSASS memory (Sysmon ProcessAccess events).
-    **Query:**
-
-    ```kql
-    event_id: 10 AND target_process_name: "lsass.exe"
-    ```
-
-23. **Hypothesis:** Suspicious rundll32/certutil operations used to stage credential dumper.
-    **Query:**
-
-    ```kql
-    process_name: ("rundll32.exe" OR "certutil.exe") AND process_command_line: ("-decode" OR "http" OR "https")
-    ```
-
-24. **Hypothesis:** PowerShell invoking credential-dumping modules or commands.
-    **Query:**
-
-    ```kql
-    process_name: "powershell.exe" AND process_command_line: ("Invoke-Mimikatz" OR "sekurlsa" OR "LogonPasswords")
-    ```
-
-25. **Hypothesis:** Attempts to read SAM / SYSTEM registry hives (backup or file access).
-    **Query:**
-
-    ```kql
-    process_command_line: ("\\Windows\\System32\\config\\SAM" OR "\\Windows\\System32\\config\\SYSTEM") OR file_path: "*\\config\\SAM"
-    ```
-
----
-
-### **Command & Control / Network (T1071)**
-
-26. **Hypothesis:** External connections to rare destination ports (non-80/443/53) may indicate C2.
-    **Query:**
-
-    ```kql
-    event_type: "network_connection" AND dest_port: NOT (80 OR 443 OR 53 OR 22 OR 21)
-    ```
-
-27. **Hypothesis:** Hosts with repeated outbound connections to same external IP (beaconing).
-    **Query:**
-
-    ```kql
-    event_type: "network_connection" AND NOT dest_ip: ("10.*" OR "192.168.*" OR "172.16.*" OR "172.31.*") | stats count() by host.name, dest_ip | where count > 10
-    ```
-
-    *(Paste the filter part in Discover; use Lens/TSVB/TS query for aggregation.)*
-
-28. **Hypothesis:** PowerShell spawning network connections (likely download/exfil).
-    **Query:**
-
-    ```kql
-    process_name: "powershell.exe" AND event_type: "network_connection"
-    ```
-
-29. **Hypothesis:** DNS queries with long or random subdomains often used by DNS-based C2.
-    **Query:**
-
-    ```kql
-    event_type: "dns" AND query: /[a-z0-9]{8,}\./
-    ```
-
-30. **Hypothesis:** Large outbound data transfers to external IPs indicate exfiltration.
-    **Query:**
-
-    ```kql
-    event_type: "network_connection" AND bytes_sent: >= 5000000 AND NOT dest_ip: ("10.*" OR "192.168.*" OR "172.16.*")
-    ```
-
-
-### **Lateral Movement / Remote Execution (T1021)**
-
-31. **Hypothesis:** PsExec usage to run commands on remote hosts.
-    **Query:**
-
-    ```kql
-    process_name: "psexec.exe" OR process_command_line: "*\\\\*"
-    ```
-
-32. **Hypothesis:** RDP connections initiated from non-admin workstations.
-    **Query:**
-
-    ```kql
-    event_id: 4624 AND logon_type: 10 AND NOT source_ip: ("10.*" OR "192.168.*")
-    ```
-
-33. **Hypothesis:** WMI or WinRM remote executions from user endpoints.
-    **Query:**
-
-    ```kql
-    process_name: ("wmic.exe" OR "winrm.exe" OR "powershell.exe") AND process_command_line: "*-ComputerName*"
-    ```
-
-34. **Hypothesis:** SMB connections to multiple hosts from single host indicates lateral scanning/propagation.
-    **Query:**
-
-    ```kql
-    event_type: "network_connection" AND dest_port: 445 AND source_ip: * | stats distinct_count(dest_ip) by host.name | where distinct_count > 5
-    ```
-
-    *(Use aggregation visual or Dev Tools for counts.)*
-
-35. **Hypothesis:** New administrative logons on many hosts by same account (credential reuse).
-    **Query:**
-
-    ```kql
-    event_id: 4624 AND logon_type: (3 OR 10) AND user_name: * | stats distinct_count(host.name) by user_name | where distinct_count > 5
-    ```
-
----
-
-### **Persistence & File Activity (T1543 / T1053 / T1074)**
-
-36. **Hypothesis:** New service installed by non-standard binary path or non-admin user.
-    **Query:**
-
-    ```kql
-    event_id: 7045 AND binary_path: ("C:\\Users\\*" OR "C:\\Temp\\*") AND user_name: NOT ("SYSTEM" OR "Administrator")
-    ```
-
-37. **Hypothesis:** Scheduled task created to run PowerShell or scripts from temp.
-    **Query:**
-
-    ```kql
-    event_id: 4698 AND process_command_line: ("*powershell*" OR "*\\Temp\\*")
-    ```
-
-38. **Hypothesis:** File writes to archives or compressible folder indicating staging for exfil.
-    **Query:**
-
-    ```kql
-    event_id: 11 AND file_path: ("*\\Downloads\\*" OR "*\\Temp\\*") AND file_name: ("*.zip" OR "*.rar" OR "*.7z")
-    ```
-
-39. **Hypothesis:** Creation of new scheduled tasks with suspicious names or paths.
-    **Query:**
-
-    ```kql
-    event_id: 4698 AND task_name: ("*Updater*" OR "*Windows Update*" OR "*svchost*") AND task_path: NOT ("\\Microsoft\\")
-    ```
-
-40. **Hypothesis:** Service image path changed (possible binary replacement).
-    **Query:**
-
-    ```kql
-    event_id: 7045 AND change_type: "modify" AND binary_path: NOT ("C:\\Windows\\System32\\*")
-    ```
-
-
-### **Defense Evasion / LOLBins (T1218 / T1140)**
-
-41. **Hypothesis:** Certutil.exe downloading or decoding files is often used for malware staging.
-
-```kql
-process_name: "certutil.exe" AND process_command_line: ("-decode" OR "-urlcache" OR "-f" OR "http*")
-```
-
-42. **Hypothesis:** Bitsadmin used for downloading remote files suspiciously.
-
-```kql
-process_name: "bitsadmin.exe" AND process_command_line: ("*http*" OR "*https*")
-```
-
-43. **Hypothesis:** MSHTA executing remote scripts for fileless attacks.
-
-```kql
-process_name: "mshta.exe" AND process_command_line: ("http*" OR "https*")
-```
-
-44. **Hypothesis:** Regsvr32 executing scripts from unusual paths.
-
-```kql
-process_name: "regsvr32.exe" AND process_command_line: ("*.sct" OR "*.dll")
-```
-
-45. **Hypothesis:** Rundll32 executing scripts not in System32 folder.
-
-```kql
-process_name: "rundll32.exe" AND process_path: NOT "C:\\Windows\\System32\\*"
-```
-
-46. **Hypothesis:** WMI subscription creation indicates stealthy persistence.
-
-```kql
-registry_key_path: "HKLM\\Software\\Microsoft\\WBEM\\CIMOM\\*EventFilter*"
-```
-
-47. **Hypothesis:** Debuggers or security tools disabled or tampered.
-
-```kql
-process_command_line: ("sc stop winmgmt" OR "sc delete" OR "taskkill /f /im")
-```
-
-48. **Hypothesis:** PowerShell scripts hiding in AppData or Temp folders.
-
-```kql
-process_name: "powershell.exe" AND process_path: ("C:\\Users\\*\\AppData\\Local\\Temp\\*" OR "C:\\Users\\*\\AppData\\Roaming\\*")
-```
-
-49. **Hypothesis:** Obfuscated scripts executed by LOLBins.
-
-```kql
-process_command_line: ("-enc" OR "-EncodedCommand" OR "IEX")
-```
-
-50. **Hypothesis:** Fileless malware loaded via legitimate admin tools.
-
-```kql
-process_name: ("rundll32.exe" OR "regsvr32.exe" OR "mshta.exe") AND process_command_line: ("http*" OR "*.dll" OR "*.sct")
-```
-
-
-### **Process Injection / Manipulation (T1055)**
-
-51. **Hypothesis:** Suspicious process accessing lsass.exe or other processes for token theft.
-
-```kql
-event_id: 10 AND target_process_name: "lsass.exe"
-```
-
-52. **Hypothesis:** Rundll32 loading unsigned DLLs into other processes.
-
-```kql
-process_name: "rundll32.exe" AND process_command_line: "*\\Temp\\*"
-```
-
-53. **Hypothesis:** Powershell spawning other processes in memory (no disk artifact).
-
-```kql
-process_name: "powershell.exe" AND process_command_line: ("Start-Process" AND "-WindowStyle Hidden")
-```
-
-54. **Hypothesis:** CScript/WScript executing scripts in user temp folders.
-
-```kql
-process_name: ("cscript.exe" OR "wscript.exe") AND process_path: ("C:\\Users\\*\\AppData\\Local\\Temp\\*")
-```
-
-55. **Hypothesis:** MSHTA loading encoded scripts from memory.
-
-```kql
-process_name: "mshta.exe" AND process_command_line: "-enc"
-```
-
----
-
-### **Registry / WMI / Other Persistence (T1547 / T1546)**
-
-56. **Hypothesis:** Run key modified with suspicious binary path.
-
-```kql
-registry_key_path: ("HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\*" OR "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\*") AND process_path: NOT "C:\\Windows\\System32\\*"
-```
-
-57. **Hypothesis:** RunOnce key modified unexpectedly.
-
-```kql
-registry_key_path: ("HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce\\*" OR "HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce\\*") AND process_path: NOT "C:\\Windows\\System32\\*"
-```
-
-58. **Hypothesis:** Scheduled tasks calling scripts from temp directories.
-
-```kql
-event_id: 4698 AND task_path: "*\\Temp\\*"
-```
-
-59. **Hypothesis:** WMI Event Filter / Consumer / Binding created.
-
-```kql
-registry_key_path: "HKLM\\Software\\Microsoft\\WBEM\\CIMOM\\*Event*"
-```
-
-60. **Hypothesis:** Service image path changed to non-standard binary location.
-
-```kql
-event_id: 7045 AND binary_path: NOT "C:\\Windows\\System32\\*"
-```
-
-
-### **Command & Control / Network Anomalies (T1071, T1043)**
-
-61. **Hypothesis:** Outbound connections to rare or suspicious IPs indicate possible C2.
-
-```kql
-event_type: "network_connection" AND NOT dest_ip: ("10.*" OR "192.168.*" OR "172.16.*" OR "172.31.*")
-```
-
-62. **Hypothesis:** Hosts making repeated outbound connections to same IP suggest beaconing.
-
-```kql
-event_type: "network_connection" | stats count() by host.name, dest_ip | where count > 10
-```
-
-63. **Hypothesis:** High volume of DNS requests to rare domains may indicate DNS C2.
-
-```kql
-event_type: "dns" AND NOT query: ("*.local" OR "*.lan" OR "*.internal")
-```
-
-64. **Hypothesis:** PowerShell initiating network connections externally.
-
-```kql
-process_name: "powershell.exe" AND event_type: "network_connection" AND NOT dest_ip: ("10.*" OR "192.168.*")
-```
-
-65. **Hypothesis:** Large outbound data transfers suggest exfiltration.
-
-```kql
-event_type: "network_connection" AND bytes_sent: >= 5000000 AND NOT dest_ip: ("10.*" OR "192.168.*")
-```
-
-66. **Hypothesis:** Suspicious FTP or SMB traffic from endpoints.
-
-```kql
-event_type: "network_connection" AND dest_port: (21 OR 445 OR 139)
-```
-
-67. **Hypothesis:** Unexpected ICMP traffic from workstations could be command signaling.
-
-```kql
-event_type: "network_connection" AND protocol: "ICMP"
-```
-
-68. **Hypothesis:** C2 using uncommon ports for HTTPS (other than 443).
-
-```kql
-event_type: "network_connection" AND dest_port: NOT (80 OR 443) AND process_name: "powershell.exe"
-```
-
-69. **Hypothesis:** Hosts connecting to many different external IPs over short period.
-
-```kql
-event_type: "network_connection" | stats distinct_count(dest_ip) by host.name | where distinct_count > 5
-```
-
-70. **Hypothesis:** DNS queries with high entropy (random subdomains).
-
-```kql
-event_type: "dns" AND query: /[a-z0-9]{8,}\./
-```
-
-
-### **Lateral Movement / Recon (T1021, T1082, T1046)**
-
-71. **Hypothesis:** PsExec used to execute commands remotely.
-
-```kql
-process_name: "psexec.exe" OR process_command_line: "*\\\\*"
-```
-
-72. **Hypothesis:** RDP connections initiated by non-admin hosts.
-
-```kql
-event_id: 4624 AND logon_type: 10 AND NOT source_ip: ("10.*" OR "192.168.*")
-```
-
-73. **Hypothesis:** WMI or WinRM remote execution commands.
-
-```kql
-process_name: ("wmic.exe" OR "winrm.exe" OR "powershell.exe") AND process_command_line: "*-ComputerName*"
-```
-
-74. **Hypothesis:** SMB enumeration on multiple hosts by same user.
-
-```kql
-event_type: "network_connection" AND dest_port: 445 | stats distinct_count(dest_ip) by user_name | where distinct_count > 5
-```
-
-75. **Hypothesis:** New administrative logons on multiple hosts by one account.
-
-```kql
-event_id: 4624 AND logon_type: (3 OR 10) | stats distinct_count(host.name) by user_name | where distinct_count > 5
-```
-
-76. **Hypothesis:** Network scanning behavior from endpoint.
-
-```kql
-event_type: "network_connection" | stats distinct_count(dest_port) by source_ip | where distinct_count > 50
-```
-
-77. **Hypothesis:** Recon using netstat/arp commands.
-
-```kql
-process_name: ("netstat.exe" OR "arp.exe") AND process_command_line: "*"
-```
-
-78. **Hypothesis:** Attempts to enumerate shares on remote hosts.
-
-```kql
-process_name: "net.exe" AND process_command_line: "view \\\\*"
-```
-
-79. **Hypothesis:** Suspicious ping sweeps or ICMP requests to multiple hosts.
-
-```kql
-event_type: "network_connection" AND protocol: "ICMP" | stats distinct_count(dest_ip) by host.name | where distinct_count > 10
-```
-
-80. **Hypothesis:** Lateral movement using RDP, SMB, or RPC outside business hours.
-
-```kql
-event_id: 4624 AND logon_type: (3 OR 10) AND @timestamp: ("now-7d/d" TO "now") AND hour_of_day: >= 20 OR hour_of_day: <= 6
-```
-
-
-### **Privilege Escalation / System (T1068 / T1548)**
-
-81. **Hypothesis:** Unusual sudo or administrative command executed on endpoints.
-
-```kql
-process_name: "sudo" OR process_command_line: "* -i" OR user_name: NOT "root"
-```
-
-82. **Hypothesis:** Exploitation of system binaries for privilege escalation.
-
-```kql
-process_name: ("runas.exe" OR "cmstp.exe") AND process_command_line: "*"
-```
-
-83. **Hypothesis:** Setuid/setgid file modifications on Linux endpoints.
-
-```kql
-file_permission: ("suid" OR "sgid") AND file_path: "/usr/*"
-```
-
-84. **Hypothesis:** UAC bypass attempts using system tools.
-
-```kql
-process_name: ("eventvwr.exe" OR "fodhelper.exe") AND process_command_line: "*"
-```
-
-85. **Hypothesis:** Processes spawning with SYSTEM privileges from user sessions.
-
-```kql
-process_name: "*.*" AND user_name: "SYSTEM" AND parent_user_name: NOT "SYSTEM"
-```
-
-
-### **Malware Staging / File Activity (T1074 / T1036)**
-
-86. **Hypothesis:** Executables dropped in Temp folders by non-admin users.
-
-```kql
-process_name: "*.*" AND file_path: ("C:\\Users\\*\\AppData\\Local\\Temp\\*" OR "C:\\Temp\\*")
-```
-
-87. **Hypothesis:** Suspicious archive or installer files created outside program directories.
-
-```kql
-file_name: ("*.exe" OR "*.msi" OR "*.zip" OR "*.rar") AND file_path: NOT ("C:\\Program Files\\*" OR "C:\\Windows\\*")
-```
-
-88. **Hypothesis:** Script files written to startup directories.
-
-```kql
-file_path: ("*\\Startup\\*") AND file_name: ("*.bat" OR "*.vbs" OR "*.ps1")
-```
-
-89. **Hypothesis:** Shadow copies or backup files created in unusual locations.
-
-```kql
-file_path: ("*.vhd" OR "*.bak") AND NOT file_path: ("C:\\Windows\\*" OR "C:\\Program Files\\*")
-```
-
-90. **Hypothesis:** Executables mimicking system binaries (e.g., svchost.exe not in System32).
-
-```kql
-process_name: "svchost.exe" AND process_path: NOT "C:\\Windows\\System32\\*"
-```
-
-
-### **Registry / Configuration / WMI (T1547 / T1546)**
-
-91. **Hypothesis:** Registry keys created/modified with suspicious values.
-
-```kql
-registry_key_path: "*" AND process_name: ("reg.exe" OR "powershell.exe") AND NOT registry_key_path: ("HKLM\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\*" OR "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\*")
-```
-
-92. **Hypothesis:** Auto-run scripts written to unusual locations.
-
-```kql
-file_path: ("C:\\Users\\*\\AppData\\Roaming\\*" OR "C:\\Users\\*\\AppData\\Local\\*") AND file_name: ("*.vbs" OR "*.ps1" OR "*.bat")
-```
-
-93. **Hypothesis:** WMI filters or event consumers created/modified.
-
-```kql
-registry_key_path: "HKLM\\Software\\Microsoft\\WBEM\\CIMOM\\*Event*"
-```
-
-94. **Hypothesis:** Scheduled tasks modified with unusual binaries.
-
-```kql
-event_id: 4698 AND task_path: NOT "\\Microsoft\\*" AND process_command_line: NOT "*\\System32\\*"
-```
-
-95. **Hypothesis:** Changes to startup folders by non-standard binaries.
-
-```kql
-file_path: ("*\\Startup\\*") AND process_name: NOT ("explorer.exe" OR "cmd.exe" OR "powershell.exe")
-```
-
----
-
-### **Cross-correlation / Combined Anomalies**
-
-96. **Hypothesis:** PowerShell executed from Temp folder + network connections to external IP.
-
-```kql
-process_name: "powershell.exe" AND process_path: ("C:\\Users\\*\\AppData\\Local\\Temp\\*") AND event_type: "network_connection"
-```
-
-97. **Hypothesis:** Credential dumping binary executed + new service installed.
-
-```kql
-(process_name: "mimikatz.exe" OR process_command_line: "*sekurlsa*") AND event_id: 7045
-```
-
-98. **Hypothesis:** Fileless malware executed via MSHTA + network beaconing.
-
-```kql
-process_name: "mshta.exe" AND process_command_line: "*http*" AND event_type: "network_connection"
-```
-
-99. **Hypothesis:** Scheduled tasks created + outbound network traffic outside office hours.
-
-```kql
-event_id: 4698 AND @timestamp: ("now-7d/d" TO "now") AND hour_of_day: >= 20 OR hour_of_day: <= 6 AND event_type: "network_connection"
-```
-
-100. **Hypothesis:** PowerShell with encoded command + writes to startup folder.
-
-```kql
-process_name: "powershell.exe" AND process_command_line: ("-enc" OR "-EncodedCommand") AND file_path: "*\\Startup\\*"
-```
-
-
-
-
-
-
-
-
+### Notes & Next Steps
+
+* Some network fields like `dest_ip` are not present in your field list; where needed I used `Message` or `EventType` to detect network-related content — you can refine these once you confirm the exact network fields (e.g., `source.ip`, `destination.ip`) if available.
+* If you prefer, I can convert this table into a CSV or Excel file and provide a download link so you can import it into your tracking system. I can also generate saved searches for Kibana (JSON) for bulk import.
+* If you'd like, I will now **produce a CSV file** of this table and a set of **Kibana saved searches** ready to import. Let me know which one you want next.
