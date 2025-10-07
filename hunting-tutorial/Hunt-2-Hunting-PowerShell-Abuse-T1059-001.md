@@ -2,7 +2,7 @@ Let’s dive into **Hunt 2: Hunting PowerShell Abuse (T1059.001)** using your la
 
 ---
 
-## **Lesson 2: Hunting PowerShell Abuse**
+## **Hunt 2: Hunting PowerShell Abuse**
 
 ### 1️⃣ Background
 
