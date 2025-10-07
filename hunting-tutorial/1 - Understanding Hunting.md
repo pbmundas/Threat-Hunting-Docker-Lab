@@ -72,8 +72,7 @@ Here’s a simple **practical workflow**:
 * Filter for suspicious PowerShell commands:
 
   ```text
-  process_name: "powershell.exe"
-  AND command_line: "*Invoke-WebRequest*"
+  NewProcessName: "powershell.exe" AND CommandLine: "*Invoke-WebRequest*"
   ```
 * Observe patterns → see if any hosts executed unusual commands.
 
