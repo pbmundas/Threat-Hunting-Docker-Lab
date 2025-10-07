@@ -34,8 +34,8 @@ For this hypothesis, look at:
 
 * **Sysmon Process Creation logs**
 
-  * `process_name` → powershell.exe
-  * `command_line` → parameters used in execution
+  * `NewProcessName` → powershell.exe
+  * `CommandLine` → parameters used in execution
 * **Windows Event Logs**
 
   * Event ID 4688 → process creation
@@ -52,13 +52,13 @@ Open **Kibana → Discover → mordor-*** index:
 * Filter for PowerShell process creation:
 
 ```text
-process_name: "powershell.exe"
+NewProcessName: "powershell.exe"
 ```
 
 * Add command line filter for suspicious patterns:
 
 ```text
-command_line: "*-nop* OR *-exec bypass* OR *Invoke-WebRequest*"
+CommandLine: "*-nop* OR *-exec bypass* OR *Invoke-WebRequest*"
 ```
 
 This helps you detect PowerShell scripts executed with:
@@ -113,10 +113,10 @@ Open **MITRE Mordor Dashboard**:
 ```yaml
 filter:
 - term:
-    process_name: "powershell.exe"
+    NewProcessName: "powershell.exe"
 - query:
     query_string:
-        query: "command_line: *-nop* OR *-exec bypass* OR *Invoke-WebRequest*"
+        query: "CommandLine: *-nop* OR *-exec bypass* OR *Invoke-WebRequest*"
 ```
 
 ---
