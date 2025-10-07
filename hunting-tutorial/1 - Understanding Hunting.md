@@ -1,6 +1,6 @@
-Start your **practical threat hunting journey** from zero. I’ll guide you step by step, using your **Docker-based ELK + ElastAlert2 lab** as the hands-on platform. I’ll break this into multiple lessons, each with practical exercises, so you can truly understand how threat hunting works in real SOC scenarios.
+Start your **practical threat hunting journey** from zero. I’ll guide you step by step, using your **Docker-based ELK + ElastAlert2 lab** as the hands-on platform. I’ll break this into multiple hunting steps, each with practical exercises, so you can truly understand how threat hunting works in real SOC scenarios.
 
-Let’s start **Lesson 1: Foundations of Threat Hunting**.
+Let’s start **Hunt 1: Foundations of Threat Hunting**.
 
 ---
 
