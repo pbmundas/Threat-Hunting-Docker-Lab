@@ -1,8 +1,8 @@
-Let’s move to **Lesson 3: Hunting Credential Dumping (T1003)** using your lab setup. This builds on the PowerShell abuse hunting but dives deeper into **host-level attacks and sensitive data access**.
+Let’s move to **Hunt 3: Hunting Credential Dumping (T1003)** using your lab setup. This builds on the PowerShell abuse hunting but dives deeper into **host-level attacks and sensitive data access**.
 
 ---
 
-## **Lesson 3: Hunting Credential Dumping (T1003)**
+## **Hunt 3: Hunting Credential Dumping (T1003)**
 
 ### 1️⃣ Background
 
