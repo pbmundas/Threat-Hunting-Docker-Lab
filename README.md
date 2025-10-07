@@ -87,7 +87,7 @@ Expected containers:
 
 ## Importing Mordor Dataset
 
-1. JSON logs (Sysmon, Windows event logs) can be ingested by **Logstash** directly keeping those JSON files in mordor folder.
+1. JSON logs (Sysmon, Windows event logs) can be ingested by **Logstash** directly keeping those JSON files in mordor folder (Currently there are limited sets as there is a size constraints).
 https://github.com/UraSecTeam/mordor/tree/master/datasets
 ---
 
