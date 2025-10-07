@@ -4,7 +4,7 @@ Let’s start **Hunt 1: Foundations of Threat Hunting**.
 
 ---
 
-## **Lesson 1: Understanding Threat Hunting Fundamentals**
+## **Hunt 1: Understanding Threat Hunting Fundamentals**
 
 ### 1️⃣ What is Threat Hunting?
 
