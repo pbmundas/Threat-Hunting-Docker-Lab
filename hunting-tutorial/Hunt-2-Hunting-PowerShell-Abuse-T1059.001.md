@@ -1,4 +1,4 @@
-Let’s dive into **Lesson 2: Hunting PowerShell Abuse (T1059.001)** using your lab. We’ll go step by step, so you can understand the practical workflow.
+Let’s dive into **Hunt 2: Hunting PowerShell Abuse (T1059.001)** using your lab. We’ll go step by step, so you can understand the practical workflow.
 
 ---
 
