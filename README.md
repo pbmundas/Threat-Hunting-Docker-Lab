@@ -101,7 +101,7 @@ Should return JSON with cluster info.
 
 2. **Access Kibana**
 * Open browser: [http://localhost:5601](http://localhost:5601)
-* Go to **Discover** → confirm indices like `mordor-*` or `network-*`.
+* Go to **Discover** → confirm indices like `mordor-*` or `network-*` (Create a dataview if these are not there, just create a index mordor* with any name your wish).
 * Go to **Dashboard** → verify `MITRE + Mordor Dashboard`.
 
 3. **Check Logstash logs**
