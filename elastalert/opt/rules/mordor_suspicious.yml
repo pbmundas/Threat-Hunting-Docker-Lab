@@ -8,3 +8,10 @@ alert:
   - "email"   # configure SMTP in ElastAlert config if you want email
 # realtime: true
 # (Or use slack webhook, webhook alerts etc.)
+# Email configuration
+smtp_host: smtp.example.com       # Your SMTP server
+smtp_port: 587
+smtp_ssl: true                     # true if SSL
+from_addr: elastalert@example.com  # Sender email
+email:
+  - recipient@example.com           # Recipient(s)
