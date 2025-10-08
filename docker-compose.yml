@@ -41,8 +41,8 @@ services:
     image: jertel/elastalert2:latest
     container_name: elastalert
     volumes:
-      - ./elastalert/config.yaml:/opt/config.yaml:ro
-      - ./elastalert/rules:/opt/rules:ro
+      - ./elastalert/opt/config.yaml:/opt/config.yaml:ro
+      - ./elastalert/opt/rules:/opt/rules:ro
     environment:
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
